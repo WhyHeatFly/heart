@@ -1,0 +1,34 @@
+name: build-exe
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: python -m pip install pygame pyinstaller
+
+      - name: Smoke test (run 120 frames without a window)
+        env:
+          SDL_VIDEODRIVER: dummy
+          PYGAME_HIDE_SUPPORT_PROMPT: "1"
+        run: |
+          python -c "import pygame, heart as H; pygame.init(); s = pygame.display.set_mode((H.WIDTH, H.HEIGHT)); sc = H.Scene(); [(sc.step(), sc.draw(s)) for _ in range(120)]; print('ok')"
+
+      - name: Build heart.exe
+        run: python -m PyInstaller --onefile --windowed --clean --name heart heart.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: heart-exe
+          path: dist/heart.exe
